@@ -1,30 +1,145 @@
-<!DOCTYPE html>
-<html lang="en">
-
+<!doctype html>
+<html lang="es">
 <head>
-    <!-- coding by helpme_coder -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valentines day card | @helpme_coder</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>¿Quieres ser mi Valentine?</title>
+<style>
+  :root{--bg1:#ff9a9e;--bg2:#fecfef;--card-bg:rgba(255,255,255,0.95)}
+  html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  body{
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2));
+    padding:20px;
+  }
+  .card{
+    width:100%;max-width:420px;padding:28px;border-radius:18px;
+    background:var(--card-bg);text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.18);
+    transform:translateY(0);transition:transform .4s ease;
+  }
+  h1{margin:0 0 6px;color:#3b0b16;font-size:22px}
+  p{margin:0 0 18px;color:#5b1b2a;font-weight:600}
+  .heart{font-size:68px;display:inline-block;transform-origin:center;animation:beat 1s infinite}
+  @keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.16)}}
+  .btn-row{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+  button{
+    background:#300;color:#fff;border:0;padding:10px 14px;border-radius:12px;font-weight:700;
+    cursor:pointer;min-width:160px;
+  }
+  .small{background:transparent;color:#300;border:2px solid #300;padding:8px 12px;min-width:120px}
+  .secret{margin-top:14px;color:#300;display:none;font-weight:800;font-size:18px}
+  .confetti{position:fixed;left:0;right:0;top:0;bottom:0;pointer-events:none;display:none}
+  footer{margin-top:14px;font-size:12px;color:#4a2430}
+  @media (max-width:420px){ .card{padding:20px;border-radius:14px} .heart{font-size:56px} }
+</style>
 </head>
-
 <body>
-    <div class="container">
-        <div class="valentines">
-            <div class="envelope"></div>
-            <div class="front"></div>
-            <div class="card">
-                <div class="text">Happy</br> Valentine's</br> Day!</div>
-                <div class="heart"></div>
-            </div>
-        </div>
+  <div class="card" id="card">
+    <h1 id="title">Para ti 💌</h1>
+    <p id="subtitle">He preparado algo especial... abre cuando quieras</p>
+    <div class="heart" id="heart">❤</div>
+    <div class="btn-row">
+      <button id="revealBtn">Presiona para preguntar</button>
+      <button id="shareBtn" class="small">Compartir</button>
     </div>
-    <div class="shadow"></div>
+    <div class="secret" id="secret">¿Quieres ser mi Valentine? ❤️</div>
+    <div class="btn-row" style="margin-top:12px;display:none" id="answerRow">
+      <button id="yesBtn">Sí, claro 😍</button>
+      <button id="noBtn" class="small">No por ahora 💙</button>
     </div>
-    <script src="script.js"></script>
-</body>
+    <footer>Consejo: pon tu canción favorita y muestra en pantalla completa.</footer>
+  </div>
 
+  <!-- música (no se reproduce hasta interacción del usuario) -->
+  <audio id="bgm" loop preload="auto">
+    <!-- Si quieres música personalizada, cambia el src a un archivo .mp3 que tú subas -->
+    <source src="https://cdn.pixabay.com/download/audio/2022/10/20/audio_3bd1b4c1e4.mp3?filename=romantic-116832.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- efecto confetti simple -->
+  <canvas class="confetti" id="confettiCanvas"></canvas>
+
+<script>
+  const revealBtn = document.getElementById('revealBtn');
+  const secret = document.getElementById('secret');
+  const answerRow = document.getElementById('answerRow');
+  const yesBtn = document.getElementById('yesBtn');
+  const noBtn = document.getElementById('noBtn');
+  const bgm = document.getElementById('bgm');
+  const shareBtn = document.getElementById('shareBtn');
+  const confettiCanvas = document.getElementById('confettiCanvas');
+
+  // Revelar pregunta: activa música y muestra opciones
+  revealBtn.addEventListener('click', async () => {
+    // intenta reproducir música (algunos navegadores exigen interacción)
+    try { await bgm.play(); } catch(e){ /* si falla, seguirá sin música hasta que interactúen */ }
+    secret.style.display = 'block';
+    answerRow.style.display = 'flex';
+    revealBtn.style.display = 'none';
+    startConfetti(); // pequeño efecto
+  });
+
+  yesBtn.addEventListener('click', () => {
+    alert("¡Perfecto! Prepárate para una sorpresa 🥰");
+    stopConfetti();
+  });
+
+  noBtn.addEventListener('click', () => {
+    alert("Gracias por tu honestidad. Te aprecio mucho 💙");
+    stopConfetti();
+  });
+
+  shareBtn.addEventListener('click', async () => {
+    const text = "Abre esto: ¿Quieres ser mi Valentine? ❤️";
+    const url = location.href;
+    if (navigator.share) {
+      try { await navigator.share({title: document.title, text, url}); }
+      catch(e){ alert("No se pudo compartir: " + e.message); }
+    } else {
+      // copia al portapapeles como fallback
+      try {
+        await navigator.clipboard.writeText(text + " " + url);
+        alert("Texto copiado al portapapeles. Pégalo en WhatsApp o donde quieras.");
+      } catch(e) {
+        alert("Tu navegador no soporta compartir. Puedes copiar manualmente el enlace.");
+      }
+    }
+  });
+
+  // Confetti simple (no librerías)
+  let confettiTimer;
+  function startConfetti(){
+    const ctx = confettiCanvas.getContext('2d');
+    confettiCanvas.width = innerWidth;
+    confettiCanvas.height = innerHeight;
+    confettiCanvas.style.display = 'block';
+    const pieces = Array.from({length:80}).map(()=>({
+      x: Math.random()*confettiCanvas.width,
+      y: Math.random()*confettiCanvas.height - confettiCanvas.height,
+      r: Math.random()*6+4,
+      dx: (Math.random()-0.5)*3,
+      dy: Math.random()*4+2,
+      color: `hsl(${Math.floor(Math.random()*360)},80%,60%)`
+    }));
+    confettiTimer = setInterval(()=> {
+      ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+      pieces.forEach(p=>{
+        p.x += p.dx; p.y += p.dy; p.dy += 0.05;
+        if(p.y>confettiCanvas.height+20){p.y=-10; p.x=Math.random()*confettiCanvas.width; p.dy=Math.random()*4+2}
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.ellipse(p.x,p.y,p.r,p.r*0.6,0,0,Math.PI*2);
+        ctx.fill();
+      });
+    }, 16);
+    setTimeout(stopConfetti, 8000);
+  }
+  function stopConfetti(){ clearInterval(confettiTimer); confettiCanvas.style.display='none'; }
+
+  // Seguridad: si el archivo se abre como archivo local (file://) el share/url no funcionará; sugiere usar servidor local si quieres compartir con link.
+  if (location.protocol === 'file:') {
+    shareBtn.title = "Para compartir como enlace, abre el archivo desde un servidor local o súbelo a Drive.";
+  }
+</script>
+</body>
 </html>
